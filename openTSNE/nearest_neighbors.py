@@ -315,16 +315,20 @@ class Annoy(KNNIndex):
     def __getstate__(self):
         import tempfile
         import base64
-        from os import path
+        import os
 
         d = dict(self.__dict__)
         # If the index is not None, we want to save the encoded index
         if self.index is not None:
-            with tempfile.TemporaryDirectory() as dirname:
-                self.index.save(path.join(dirname, "tmp.ann"))
+            tmp = tempfile.NamedTemporaryFile(delete_on_close=False)
+            fname = tmp.name
+            self.index.save(fname)
+            tmp.close()
 
-                with open(path.join(dirname, "tmp.ann"), "rb") as f:
-                    b64_index = base64.b64encode(f.read())
+            with open(tmp.name, "rb") as f:
+                b64_index = base64.b64encode(f.read())
+
+            os.remove(tmp.name)
 
             d["b64_index"] = b64_index
             del d["index"]
